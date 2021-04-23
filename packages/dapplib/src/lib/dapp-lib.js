@@ -9,6 +9,62 @@ const BN = require('bn.js'); // Required for injected code
 
 module.exports = class DappLib {
 
+    static async vote(data) {
+
+        let result = await Blockchain.post({
+                config: DappLib.getConfig(),
+                contract: DappLib.DAPP_CONTRACT,
+                params: {
+                }
+            },
+            'vote',         //Name of the function as defined in <action-button>
+            data.candidateId //Data to write to the blockchain
+        );
+        return {
+            type: DappLib.DAPP_RESULT_TX_HASH,
+            label: 'Transaction Hash',
+            result: DappLib.getTransactionHash(result.callData),
+            hint: ''
+        }
+    }
+
+    static async getCandidates() {
+    
+        //Result object will contain the list of our candidates
+        let result = await Blockchain.get({
+                config: DappLib.getConfig(),
+                contract: DappLib.DAPP_CONTRACT,
+                params: {
+                }
+            },
+            'getCandidates', // Make sure this matches the function name in Dapp.sol
+        );   
+        
+        let results = [];
+        //Fetch names from the Result object
+        let names = result.callData[0];
+        //Fetch vote counts from the Result object
+        let voteCounts = result.callData[1];
+        //Let's merge names and voteCounts together so that our final result looks something like this:
+        /*
+            {
+                name: "Kitty"
+                voteCount: 0
+            },
+            {
+                name: "Doggo"
+                voteCount: 0
+            }
+        */
+        names.forEach((name, index) => {
+            results.push({
+                name: name,
+                voteCount: voteCounts[index],
+            })
+        });
+        return results;
+    }
+
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>> ACCESS CONTROL: ADMINISTRATOR ROLE  <<<<<<<<<<<<<<<<<<<<<<<<<<*/
 
     static async isContractAdmin(data) {
